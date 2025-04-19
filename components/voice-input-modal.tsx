@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Mic, StopCircle } from "lucide-react"
+import { useState, useEffect, useRef } from "react"
+import { Mic, StopCircle, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -14,7 +14,9 @@ interface VoiceInputModalProps {
 export function VoiceInputModal({ isOpen, onClose, onVoiceInput }: VoiceInputModalProps) {
   const [isRecording, setIsRecording] = useState(false)
   const [recognizedText, setRecognizedText] = useState("")
-  const [recognition, setRecognition] = useState<any>(null)
+  const [error, setError] = useState<string | null>(null)
+  const recognitionRef = useRef<any>(null)
+  const [isSupported, setIsSupported] = useState(true)
 
   useEffect(() => {
     // Initialize Web Speech API
@@ -22,82 +24,117 @@ export function VoiceInputModal({ isOpen, onClose, onVoiceInput }: VoiceInputMod
       const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition
 
       if (SpeechRecognition) {
-        const recognitionInstance = new SpeechRecognition()
-        recognitionInstance.continuous = false
-        recognitionInstance.lang = "en-US"
-        recognitionInstance.interimResults = true
-        recognitionInstance.maxAlternatives = 1
+        try {
+          const recognitionInstance = new SpeechRecognition()
+          recognitionInstance.continuous = false
+          recognitionInstance.lang = "en-US"
+          recognitionInstance.interimResults = true
+          recognitionInstance.maxAlternatives = 1
 
-        recognitionInstance.onresult = (event: any) => {
-          let interimTranscript = ""
-          let finalTranscript = ""
+          recognitionInstance.onresult = (event: any) => {
+            let interimTranscript = ""
+            let finalTranscript = ""
 
-          for (let i = event.resultIndex; i < event.results.length; ++i) {
-            if (event.results[i].isFinal) {
-              finalTranscript += event.results[i][0].transcript
-            } else {
-              interimTranscript += event.results[i][0].transcript
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+              if (event.results[i].isFinal) {
+                finalTranscript += event.results[i][0].transcript
+              } else {
+                interimTranscript += event.results[i][0].transcript
+              }
+            }
+
+            if (finalTranscript) {
+              setRecognizedText(finalTranscript)
+              stopRecording()
+            } else if (interimTranscript) {
+              setRecognizedText(interimTranscript)
             }
           }
 
-          if (finalTranscript) {
-            setRecognizedText(finalTranscript)
-            stopRecording()
-          } else if (interimTranscript) {
-            setRecognizedText(interimTranscript)
+          recognitionInstance.onstart = () => {
+            setIsRecording(true)
+            setError(null)
           }
-        }
 
-        recognitionInstance.onstart = () => {
-          setIsRecording(true)
-        }
+          recognitionInstance.onend = () => {
+            setIsRecording(false)
+          }
 
-        recognitionInstance.onend = () => {
-          setIsRecording(false)
-        }
+          recognitionInstance.onerror = (event: any) => {
+            console.error("Speech recognition error:", event.error)
+            setIsRecording(false)
 
-        recognitionInstance.onerror = (event: any) => {
-          console.error("Speech recognition error:", event.error)
-          setIsRecording(false)
-        }
+            // Handle specific error types
+            if (event.error === "network") {
+              setError("Network error. Please check your internet connection and try again.")
+            } else if (event.error === "not-allowed") {
+              setError("Microphone access denied. Please allow microphone access in your browser settings.")
+            } else if (event.error === "no-speech") {
+              setError("No speech detected. Please try again and speak clearly.")
+            } else {
+              setError(`Error: ${event.error}. Please try again.`)
+            }
+          }
 
-        setRecognition(recognitionInstance)
+          recognitionRef.current = recognitionInstance
+        } catch (error) {
+          console.error("Error initializing speech recognition:", error)
+          setIsSupported(false)
+        }
+      } else {
+        setIsSupported(false)
       }
     }
 
     return () => {
-      if (recognition) {
-        recognition.onresult = null
-        recognition.onstart = null
-        recognition.onend = null
-        recognition.onerror = null
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort()
+        } catch (e) {
+          console.error("Error cleaning up speech recognition:", e)
+        }
       }
     }
   }, [])
 
   const startRecording = () => {
-    if (!recognition) {
-      alert("Speech recognition is not supported in your browser")
+    if (!recognitionRef.current) {
+      setError("Speech recognition is not supported in your browser")
       return
     }
 
     setRecognizedText("")
+    setError(null)
+
     try {
-      recognition.start()
+      recognitionRef.current.start()
     } catch (error) {
       console.error("Error starting speech recognition:", error)
+      setError("Failed to start speech recognition. Please try again.")
     }
   }
 
   const stopRecording = () => {
-    if (recognition && isRecording) {
-      recognition.stop()
+    if (recognitionRef.current && isRecording) {
+      try {
+        recognitionRef.current.stop()
+      } catch (error) {
+        console.error("Error stopping speech recognition:", error)
+      }
     }
   }
 
   const handleSubmit = () => {
     if (recognizedText) {
       onVoiceInput(recognizedText)
+    }
+  }
+
+  const handleManualInput = () => {
+    // Provide a fallback for when voice input doesn't work
+    const text = prompt("Enter your task manually:")
+    if (text) {
+      onVoiceInput(text)
     }
   }
 
@@ -120,6 +157,13 @@ export function VoiceInputModal({ isOpen, onClose, onVoiceInput }: VoiceInputMod
           </p>
         </div>
 
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 rounded-lg text-left flex items-start">
+            <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" />
+            <p className="text-sm">{error}</p>
+          </div>
+        )}
+
         {recognizedText && (
           <div className="mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg text-left animate-in fade-in slide-in-from-bottom-5 duration-300">
             <p className="text-sm">
@@ -133,6 +177,7 @@ export function VoiceInputModal({ isOpen, onClose, onVoiceInput }: VoiceInputMod
             <Button
               onClick={startRecording}
               className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition"
+              disabled={!isSupported}
             >
               <Mic className="w-4 h-4 mr-1" /> Start
             </Button>
@@ -158,6 +203,19 @@ export function VoiceInputModal({ isOpen, onClose, onVoiceInput }: VoiceInputMod
             Cancel
           </Button>
         </div>
+
+        {!isSupported || error ? (
+          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <Button variant="secondary" onClick={handleManualInput} className="w-full">
+              Enter Task Manually
+            </Button>
+            <p className="text-xs text-gray-500 mt-2">
+              {!isSupported
+                ? "Speech recognition is not supported in your browser. You can enter your task manually instead."
+                : "Having trouble with voice input? You can enter your task manually instead."}
+            </p>
+          </div>
+        ) : null}
       </div>
     </div>
   )

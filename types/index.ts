@@ -29,3 +29,5 @@ export type View = "inbox" | "today" | "upcoming" | "kanban" | "timeline" | "cal
 export type Filter = "all" | "active" | "completed"
 
 export type SortOption = "dueDate" | "priority" | "createdAt" | "title"
+
+export type ViewLayout = "list" | "grid"

@@ -12,7 +12,11 @@
   --green-100: #dcfce7;
   --green-800: #166534;
   --green-500: #22c55e;
+  --purple-100: #f3e8ff;
+  --purple-800: #6b21a8;
   --purple-500: #a855f7;
+  --orange-100: #ffedd5;
+  --orange-800: #9a3412;
   --orange-500: #f97316;
   --yellow-100: #fef3c7;
   --yellow-800: #92400e;
@@ -32,7 +36,11 @@
   --green-100: #14532d;
   --green-800: #bbf7d0;
   --green-500: #4ade80;
+  --purple-100: #581c87;
+  --purple-800: #e9d5ff;
   --purple-500: #c084fc;
+  --orange-100: #7c2d12;
+  --orange-800: #fed7aa;
   --orange-500: #fb923c;
   --yellow-100: #78350f;
   --yellow-800: #fde68a;
@@ -87,6 +95,16 @@
   transition: all 300ms ease;
 }
 
+/* Drag and drop animations */
+.sortable-item {
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.sortable-item.dragging {
+  z-index: 10;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
 /* Voice recording animation */
 @keyframes pulse {
   0% {
@@ -104,4 +122,39 @@
 }
 .recording .mic-icon {
   animation: pulse 1.5s infinite;
+}
+
+/* Page transitions */
+.page-transition-enter {
+  opacity: 0;
+  transform: translateY(10px);
+}
+.page-transition-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms, transform 300ms;
+}
+.page-transition-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+.page-transition-exit-active {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 300ms, transform 300ms;
+}
+
+/* Grid view animations */
+.task-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.task-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Dark mode transition */
+.dark-mode-transition {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }

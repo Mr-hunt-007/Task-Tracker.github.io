@@ -2,6 +2,8 @@
 
 import { useState } from "react"
 import { Calendar, Flag, Folder, Trash } from "lucide-react"
+import { useSortable } from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
 import type { Task, List, Tag } from "@/types"
 import { cn } from "@/lib/utils"
 import { formatDate } from "@/lib/date-utils"
@@ -34,7 +36,22 @@ export function TaskList({ tasks, groupByDate = false, onToggleCompletion, onDel
     }
   }
 
-  const renderTaskItem = (task: Task) => {
+  const SortableTaskItem = ({ task }: { task: Task }) => {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+      id: task.id,
+      data: {
+        type: "task",
+        task,
+      },
+    })
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+      zIndex: isDragging ? 10 : 1,
+    }
+
     const today = new Date().toISOString().split("T")[0]
     let dateClass = ""
 
@@ -48,9 +65,12 @@ export function TaskList({ tasks, groupByDate = false, onToggleCompletion, onDel
 
     return (
       <div
-        key={task.id}
+        ref={setNodeRef}
+        style={style}
+        {...attributes}
+        {...listeners}
         className={cn(
-          "task-item bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 pr-8 border-l-4 transition duration-150 ease-in-out relative flex items-start group",
+          "task-item bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 pr-8 border-l-4 transition duration-150 ease-in-out relative flex items-start group cursor-grab active:cursor-grabbing",
           getPriorityColor(task.priority),
           task.completed ? "opacity-60" : "",
         )}
@@ -65,7 +85,10 @@ export function TaskList({ tasks, groupByDate = false, onToggleCompletion, onDel
                 ? "bg-blue-500 border-blue-500 text-white"
                 : "border-gray-300 dark:border-gray-600 hover:border-blue-400",
             )}
-            onClick={() => onToggleCompletion(task.id)}
+            onClick={(e) => {
+              e.stopPropagation()
+              onToggleCompletion(task.id)
+            }}
             aria-label={task.completed ? "Mark task as incomplete" : "Mark task as complete"}
           >
             {task.completed && (
@@ -96,7 +119,10 @@ export function TaskList({ tasks, groupByDate = false, onToggleCompletion, onDel
                 "task-delete-button absolute top-2 right-2 text-gray-400 hover:text-red-500 dark:hover:text-red-400 text-xs focus:outline-none focus:ring-1 focus:ring-red-400 rounded transition-opacity",
                 hoveredTaskId === task.id ? "opacity-100" : "opacity-0",
               )}
-              onClick={() => onDeleteTask(task.id)}
+              onClick={(e) => {
+                e.stopPropagation()
+                onDeleteTask(task.id)
+              }}
               aria-label="Delete task"
             >
               <Trash className="w-4 h-4" />
@@ -163,7 +189,13 @@ export function TaskList({ tasks, groupByDate = false, onToggleCompletion, onDel
   }
 
   if (!groupByDate) {
-    return <div className="space-y-3">{tasks.map(renderTaskItem)}</div>
+    return (
+      <div className="space-y-3">
+        {tasks.map((task) => (
+          <SortableTaskItem key={task.id} task={task} />
+        ))}
+      </div>
+    )
   }
 
   // Group tasks by date for Today/Upcoming views
@@ -226,7 +258,11 @@ export function TaskList({ tasks, groupByDate = false, onToggleCompletion, onDel
               </h3>
               <span className="text-xs text-gray-500 dark:text-gray-400">{group.tasks.length} tasks</span>
             </div>
-            <div className="space-y-3">{group.tasks.map(renderTaskItem)}</div>
+            <div className="space-y-3">
+              {group.tasks.map((task) => (
+                <SortableTaskItem key={task.id} task={task} />
+              ))}
+            </div>
           </div>
         )
       })}
