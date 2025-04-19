@@ -52,7 +52,7 @@ Prioritize smarter with the **Eisenhower Matrix**, helping you separate the *urg
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/Task-Tracker.github.io.git
+git clone https://github.com/Mr-hunt-007/Task-Tracker.github.io
 ```
 
 ### 2. Navigate into the project
