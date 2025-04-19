@@ -76,7 +76,7 @@ export default function LandingPage() {
         </p>
         <div className="relative rounded-xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-700">
           <div className="absolute inset-0 bg-gradient-to-tr from-blue-600/10 to-indigo-600/10 dark:from-blue-900/20 dark:to-indigo-900/20"></div>
-          <img src="/placeholder.svg?height=600&width=1200" alt="TaskTracker App Preview" className="w-full h-auto" />
+          <img src="https://raw.githubusercontent.com/Mr-hunt-007/Task-Tracker.github.io/refs/heads/main/Task-Tracker.png?height=600&width=1200" alt="TaskTracker App Preview" className="w-full h-auto" />
           <div className="absolute top-0 left-0 right-0 h-10 bg-gradient-to-b from-black/20 to-transparent"></div>
         </div>
       </section>
